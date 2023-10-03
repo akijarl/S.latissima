@@ -131,14 +131,14 @@ require(SNPRelate)
 #install.packages("bigstatsr")
 #require(bigstatsr)
 
-pos_loc <- row.names(genoV)
+pos_loc <- row.names(geno)
 
-G <- matrix(NA, nrow = nrow(genoV), ncol = ncol(genoV),dimnames = list(pos_loc,colnames(genoV)) )
+G <- matrix(NA, nrow = nrow(geno), ncol = ncol(geno),dimnames = list(pos_loc,colnames(geno)) )
 
-G[genoV %in% c("0/0")] <- 0
-G[genoV %in% c("0/1", "1/0")] <- 1
-G[genoV %in% c("1/1")] <- 2
-G[genoV %in% NA] <- 9
+G[geno %in% c("0/0")] <- 0
+G[geno %in% c("0/1", "1/0")] <- 1
+G[geno %in% c("1/1")] <- 2
+G[geno %in% NA] <- 9
 
 SNPmat<-(t(G))
 
@@ -207,7 +207,7 @@ abline(a=0,b=1,col="red")
 
 ind.keep<-1:nrow(G)
 
-out_trim <- OutFLANK(my_fst[ind.keep,], NumberOfSamples=length(unique(pop)), qthreshold = 0.001, Hmin = 0.01)
+out_trim <- OutFLANK(my_fst[ind.keep,], NumberOfSamples=length(unique(pop)), qthreshold = 0.05, Hmin = 0.01)
 str(out_trim)
 head(out_trim$results)
 summary(out_trim$results$OutlierFlag)
@@ -220,6 +220,21 @@ OutFLANKResultsPlotter(out_trim, withOutliers = TRUE,
 OutFLANKResultsPlotter(out_trim , withOutliers = TRUE,
                        NoCorr = TRUE, Hmin = 0.01, binwidth = 0.01, Zoom =
                          TRUE, RightZoomFraction = 0.15, titletext = NULL)
+
+hist(out_trim$results$pvaluesRightTail)
+
+P1 <- pOutlierFinderChiSqNoCorr(my_fst, Fstbar = out_trim$FSTNoCorrbar, dfInferred = out_trim$dfInferred, qthreshold = 0.05, Hmin=0.1)
+
+(my_out <- P1$OutlierFlag==TRUE)
+plot(P1$He, P1$FST, pch=19, col=rgb(0,0,0,0.1),xlab="Heterozygosity", ylab=expression(paste("F"[ST], " across all populations", sep="")), main=expression(paste("Per locus F"[ST], " vs Heterozygosity", sep="")))
+points(P1$He[my_out], P1$FST[my_out], col="blue")
+
+hist(P1$pvaluesRightTail)
+
+OutLoc<-P1[P1$OutlierFlag==TRUE,]
+OutLoc<-OutLoc[!is.na(OutLoc$OutlierFlag),]
+
+manhattan(IS_ch, chr="CHROM", bp="POS", p="WEIR_AND_COCKERHAM_FST", snp="SNP", logp=FALSE, ylab="", xlab="", cex.axis=1.5, ylim=c(0.0,1.1))
 
 
 #vcf.fn<-"S.laminaria_bowtie_samtools.mQ30mMQ40.vcf.gz"
